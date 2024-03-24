@@ -13,6 +13,8 @@ In this comprehensive analysis, I delved into the dataset to uncover insights an
 
 To further enrich the analysis, I incorporated dark theme settings across all visualizations, enhancing the clarity and aesthetic appeal of the plots. This thematic consistency ensures an engaging and visually cohesive presentation of the findings.
 
+![Age Histogram](Plots/age_hist_plot.jpg "Age Histogram")
+
 # Categorical Variable Distribution Analysis
 A series of bar plots were generated to explore the distribution of various categorical predictor variables by credit risk status, including CheckingAccountStatus, Duration, CreditHistory, Purpose, Savings, InstallmentRate, Housing, and ForeignWorker. Each plot highlights the count of observations for the categories within these variables, distinguished by credit risk status ("Good" vs. "Bad"). This analysis offers a nuanced understanding of how different factors relate to credit risk.
 
@@ -24,6 +26,8 @@ A detailed summary of CreditAmount for "Good" (0) and "Bad" (1) credit risks was
 
 The visualization of these summaries employs a dark theme, with distinct color coding (green for "Good" and red for "Bad") to delineate between the credit risk categories. Point markers indicate mean and median values, while segments represent the range from minimum to maximum credit amounts. This visual representation underscores the differences in credit amount distributions across the risk categories, aiding in the identification of trends and outliers.
 
+credit_amount_plot
+![credit amount distributions across the risk categories](Plots/credit_amount_plot.jpg "credit amount distributions across the risk categories")
 
 # Model Development
 A full logistic regression model was built using all available predictors, followed by stepwise regression to identify a reduced model with significant predictors. The reduced model focused on variables like CheckingAccountStatus, Duration, CreditHistory, Purpose, and Age, among others.
