@@ -13,9 +13,11 @@ In this comprehensive analysis, I delved into the dataset to uncover insights an
 
 To further enrich the analysis, I incorporated dark theme settings across all visualizations, enhancing the clarity and aesthetic appeal of the plots. This thematic consistency ensures an engaging and visually cohesive presentation of the findings.
 
-
 # Categorical Variable Distribution Analysis
 A series of bar plots were generated to explore the distribution of various categorical predictor variables by credit risk status, including CheckingAccountStatus, Duration, CreditHistory, Purpose, Savings, InstallmentRate, Housing, and ForeignWorker. Each plot highlights the count of observations for the categories within these variables, distinguished by credit risk status ("Good" vs. "Bad"). This analysis offers a nuanced understanding of how different factors relate to credit risk.
+
+![Distribution of CheckingAccountStatus by Credit Risk](Plots/CheckingAccountStatus_by_CreditRisk.png "Distribution of CheckingAccountStatus by Credit Risk")
+
 
 # Credit Amount Summary by Credit Risk
 A detailed summary of CreditAmount for "Good" (0) and "Bad" (1) credit risks was conducted, calculating the mean, median, minimum, and maximum credit amounts within each group. This summary provides a deeper insight into the financial behavior associated with each credit risk category.
