@@ -1,0 +1,433 @@
+---
+title: "German Credit 2"
+author: "Joanna Romano"
+date: "2024-03-03"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r}
+# libraries
+library(MASS)
+library(tidyverse)
+library(ggplot2)
+library(pROC)
+library(dplyr)
+library(scales)
+
+
+# German Credit dataset
+data = read.table("SouthGermanCredit.asc", header=T )
+
+# First 6 columns of the data set
+head(data)
+
+# Summary statistics
+summary(data)
+
+```
+
+```{r}
+# Renaming the features and target variables to English
+
+names(data)[names(data) == "laufkont"] <- "CheckingAccountStatus"
+names(data)[names(data) == "laufzeit"] <- "Duration"
+names(data)[names(data) == "moral"] <- "CreditHistory"
+names(data)[names(data) == "verw"] <- "Purpose"
+names(data)[names(data) == "hoehe"] <- "CreditAmount"
+names(data)[names(data) == "sparkont"] <- "Savings"
+names(data)[names(data) == "beszeit"] <- "EmploymentDuration"
+names(data)[names(data) == "rate"] <- "InstallmentRate"
+names(data)[names(data) == "famges"] <- "PersonalStatusSex"
+names(data)[names(data) == "buerge"] <- "OtherDebtors"
+names(data)[names(data) == "wohnzeit"] <- "PresentResidence"
+names(data)[names(data) == "verm"] <- "Property"
+names(data)[names(data) == "alter"] <- "Age"
+names(data)[names(data) == "weitkred"] <- "OtherInstallmentPlans"
+names(data)[names(data) == "wohn"] <- "Housing"
+names(data)[names(data) == "bishkred"] <- "NumberCredits"
+names(data)[names(data) == "beruf"] <- "Job"
+names(data)[names(data) == "pers"] <- "PeopleLiable"
+names(data)[names(data) == "telef"] <- "Telephone"
+names(data)[names(data) == "gastarb"] <- "ForeignWorker"
+names(data)[names(data) == "kredit"] <- "CreditRisk"
+
+# Checking that features and target variables are properly labeled
+head(data)
+```
+
+```{r}
+# Inspecting the structure of the dataset.
+str(data)
+```
+
+```{r}
+# changed categorical variables and binary to the correct format
+for(col_num in c(1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21)){data[,col_num] = as.factor(data[,col_num])}
+
+# checked to see it the the categorical variables correctly changed
+str(data)
+```
+
+```{r}
+summary(data)
+```
+
+
+```{r}
+# Plotting the Target Variable
+ggplot(data, aes(x=factor(CreditRisk, labels = c("Good", "Bad")), fill=factor(CreditRisk, labels = c("Good", "Bad")))) +
+  # Light gray border for bars
+    geom_bar(color="#CCCCCC", stat="count") + 
+  # Add count labels above bars
+    geom_text(stat='count', aes(label=..count.., y=..count..), vjust=-0.5, color="white") +
+  # Green for Good, Deep pink for Bad, with legend title
+    scale_fill_manual(values=c("Good"="#00C853", "Bad"="#D81B60"), name="Credit Risk") + 
+    labs(x="Credit Risk", y="Count", title="Distribution of Credit Risk") +
+    theme_minimal(base_family = "sans") +
+    theme(
+      text = element_text(color = "white"),
+      plot.title = element_text(hjust = 0.5, color = "white", size = 14, face = "bold"),
+      plot.background = element_rect(fill = "#222222", color = "#222222"),
+      panel.background = element_rect(fill = "#222222", color = "#222222"),
+      panel.grid.major = element_line(color = "#444444"),
+      panel.grid.minor = element_blank(),
+      axis.text = element_text(color = "white"),
+      axis.title = element_text(color = "white"),
+      axis.line = element_line(color = "white"),
+      axis.ticks = element_line(color = "white"),
+      legend.title = element_text(color = "white"),
+      legend.text = element_text(color = "white"),
+      legend.background = element_rect(fill="#222222")
+    )
+
+# Possible Model Bias due to the imbalance on more Bad Credit Risk Observations 
+# than Good Credit Risk Observations
+
+```
+
+Possible Model Bias due to the imbalance on more Bad Credit Risk Observations 
+than Good Credit Risk Observations.
+
+```{r}
+# Bin width you want to use for your histogram
+bin_width <- 5
+
+# Calculate the counts for each age group
+age_data <- data %>%
+  mutate(AgeGroup = cut(Age, breaks = seq(min(Age), max(Age), by = bin_width), include.lowest = TRUE, right = FALSE)) %>%
+  group_by(AgeGroup) %>%
+  summarise(Count = n()) %>%
+  ungroup() %>%
+  mutate(Percentage = Count / sum(Count) * 100)
+
+# Convert AgeGroup to a factor to ensure ggplot uses discrete bins
+age_data$AgeGroup <- factor(age_data$AgeGroup)
+
+# Histogram on the Age feature
+age_hist_plot <- ggplot(age_data, aes(x = AgeGroup, y = Percentage)) +
+  geom_bar(stat = "identity", fill = "#00FFCC", color = "#CCCCCC") + # Vibrant teal fill with lighter gray border
+  geom_text(aes(label = paste0(round(Percentage, 1), "%")), vjust = -0.5, size = 3.5, color = "white") +
+  labs(x = "Age Group", y = "Percentage", title = "Distribution of Age by Percentage") +
+  theme_minimal(base_family = "sans") +
+  theme(
+    text = element_text(color = "white"),
+    plot.title = element_text(hjust = 0.5, color = "white", size = 14, face = "bold"),
+    plot.background = element_rect(fill = "#222222", color = "#222222"),
+    panel.background = element_rect(fill = "#222222", color = "#222222"),
+    panel.grid.major = element_line(color = "#444444"),
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(color = "white"),
+    axis.title = element_text(color = "white"),
+    axis.line = element_line(color = "white"),
+    axis.ticks = element_line(color = "white")
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+ggsave("age_hist_plot.jpg", plot=age_hist_plot, width=10, height=6, dpi=300)
+print(age_hist_plot)
+
+```
+
+
+
+```{r}
+# 5 Number Summary
+age_min <- min(data$Age, na.rm = TRUE)
+age_q1 <- quantile(data$Age, 0.25, na.rm = TRUE)
+age_median <- median(data$Age, na.rm = TRUE)
+age_q3 <- quantile(data$Age, 0.75, na.rm = TRUE)
+age_max <- max(data$Age, na.rm = TRUE)
+
+# Creating a horizontal box plot and annotating it with the five-number summary
+ggplot(data, aes(x="", y=Age)) +
+    geom_boxplot(fill="#00FFCC", color="black") +
+    coord_flip() +  # Make the plot horizontal
+    geom_text(aes(x=1.05, y=age_min, label=paste("Min:", age_min)), hjust=-0.3, size=3) +
+    geom_text(aes(x=1.05, y=age_q1, label=paste("Q1:", age_q1)), hjust=-0.3, size=3) +
+    geom_text(aes(x=1.05, y=age_median, label=paste("Median:", age_median)), hjust=-0.3, size=3) +
+    geom_text(aes(x=1.05, y=age_q3, label=paste("Q3:", age_q3)), hjust=-0.3, size=3) +
+    geom_text(aes(x=1.05, y=age_max, label=paste("Max:", age_max)), hjust=.5, size=3) +
+    theme_light(base_size = 12) +
+    theme(
+      axis.title.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.x = element_blank(),
+      plot.background = element_rect(fill = "white", color = "white"),
+      panel.background = element_rect(fill = "white", color = "white"),
+      panel.grid.major = element_line(color = "#cccccc"),
+      panel.grid.minor = element_blank()
+    ) +
+    labs(title="Box Plot of Age", y="Age")
+
+
+
+```
+
+```{r}
+mean_age <- mean(data$Age, na.rm = TRUE)
+median_age <- median(data$Age, na.rm = TRUE)
+
+
+print(paste("Median Age:", median_age))
+iqr_age <- IQR(data$Age)
+print(paste("IQR of Age:", iqr_age))
+
+age_summary <- summary(data$Age)
+print(age_summary)
+
+```
+
+
+The histogram is positively skewed, with the Median of 33 and IQR of 15 and a 
+mean of 35.54. This indicates that the majority of the individuals in the 
+dataset are of younger age.
+
+
+```{r}
+# Adjusting Opacity in Scatter Plot
+ggplot(data, aes(x=Age, y=CreditAmount)) +
+    geom_point(aes(color=factor(CreditRisk, labels = c("Good", "Bad"))), size=3, alpha=0.6) + # Adjusted opacity
+    scale_color_manual(name="Credit Risk",
+                       values=c("Good"="#00C853", "Bad"="#D81B60")) + # Vibrant green for Good, Deep pink for Bad
+    labs(x="Age", y="Credit Amount", title="Credit Amount vs. Age") +
+    theme_minimal(base_family = "sans") +
+    theme(
+      text = element_text(color = "white"),
+      plot.title = element_text(hjust = 0.5, color = "white", size = 14, face = "bold"),
+      plot.background = element_rect(fill = "#222222", color = "#222222"),
+      panel.background = element_rect(fill = "#222222", color = "#222222"),
+      panel.grid.major = element_line(color = "#444444"),
+      panel.grid.minor = element_blank(),
+      axis.text = element_text(color = "white"),
+      axis.title = element_text(color = "white"),
+      axis.line = element_line(color = "white"),
+      axis.ticks = element_line(color = "white"),
+      legend.title = element_text(color = "white"),
+      legend.text = element_text(color = "white"),
+      legend.background = element_rect(fill="#222222"),
+      legend.key = element_rect(fill="#222222", color="#222222")
+    )
+
+```
+
+
+
+```{r}
+# spliting the data into training and validation sets
+set.seed(1)
+train_sample = sample(1:nrow(data), 0.75*nrow(data), replace=FALSE)
+test_sample = setdiff(1:nrow(data), train_sample)
+data_train = data[train_sample,]
+data_val = data[-test_sample,]
+
+```
+
+```{r}
+# Full GLM Model
+g_credit_full = glm(CreditRisk~., data=data_train, family="binomial")
+summary(g_credit_full)
+```
+
+```{r}
+# Model Reduction
+
+# Full logistic regression model
+g_credit_full <- glm(CreditRisk ~ ., data = data_train, family = "binomial")
+
+# Stepwise regression
+reduced_model <- step(g_credit_full, direction = "both")
+
+# Summary of the reduced model
+summary(reduced_model)
+
+# Evaluate model performance on validation set by calculating AUC
+predictions <- predict(reduced_model, newdata = data_val, type = "response")
+auc <- roc(data_val$CreditRisk, predictions)$auc
+print(paste("AUC for Reduced Model:", auc))
+
+# Use the predictions and the actual outcomes to compute the ROC object
+roc_obj <- roc(response=data_val$CreditRisk, predictor=predictions)
+
+# Plot the ROC curve
+plot(roc_obj, main="ROC Curve for Reduced Model")
+abline(a=0, b=1, lty=2, col="red") # Adding the reference line
+
+```
+
+
+```{r}
+# Formula for the Reduced Generlized Linear Model
+model_summary <- summary(reduced_model)
+model_coefficients <- model_summary$coefficients
+```
+$$
+\log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 \times \text{CheckingAccountStatus} + \beta_2 \times \text{Duration} + \ldots + \beta_n \times \text{ForeignWorker}
+$$
+
+```{r echo=FALSE, results='asis'}
+# LaTex for logistic regression, 
+# this will show the Generalized Reduced Linear Model in R Markdown
+
+model_summary <- summary(reduced_model)
+coeffs <- model_summary$coefficients
+
+# LaTeX aligned equation
+equation_str <- "\\begin{align*}\n\\log\\left(\\frac{p}{1-p}\\right) &= "
+
+# Loop through coefficients to add to the equation string, breaking lines as needed
+for (i in 1:nrow(coeffs)) {
+  coef_name <- rownames(coeffs)[i]
+  coef_value <- coeffs[i, 1]
+  
+  # Format the coefficient name for LaTeX
+  coef_name_latex <- gsub(" ", "\\ ", coef_name)
+  
+  # Add to the equation string
+  if (i == 1) {
+    # Intercept
+    equation_str <- paste0(equation_str, coef_value)
+  } else {
+    # Other coefficients, breaking lines every few terms for readability
+    if (i %% 1 == 0) { # Adjust the number here based on your layout/preference
+      equation_str <- paste0(equation_str, " \\\\\n&+ ", coef_value, " \\times ", coef_name_latex)
+    } else {
+      equation_str <- paste0(equation_str, " + ", coef_value, " \\times ", coef_name_latex)
+    }
+  }
+}
+
+# Close the LaTeX aligned equation
+equation_str <- paste0(equation_str, "\n\\end{align*}")
+
+# Print the equation string for R Markdown to render as LaTeX
+cat(equation_str)
+
+```
+
+```{r}
+# Cross-tabulation of CheckingAccountStatus by CreditRisk
+table(data$CheckingAccountStatus, data$CreditRisk)
+```
+
+
+```{r}
+# Categorical variables 
+categorical_vars <- c("CheckingAccountStatus", "Duration", "CreditHistory", 
+                      "Purpose", "Savings", "InstallmentRate", "Housing", "ForeignWorker")
+
+# Loop through each categorical variable to create a bar plot with a dark theme and count labels
+for (var in categorical_vars) {
+  plot_title <- paste("Distribution of", var, "by Credit Risk")
+
+  p <- data %>%
+    ggplot(aes_string(x=var, fill="as.factor(CreditRisk)")) +
+    geom_bar(position="dodge") +
+    geom_text(stat='count', aes_string(label='..count..', y='..count..'), position=position_dodge(width=0.9), vjust=-0.25, color="white") +
+    labs(title=plot_title,
+         subtitle=" ",
+         x=var, y="Count", fill="Credit Risk") +
+    scale_fill_manual(values=c("0"="#00C853", "1"="#D81B60"), labels=c("Good", "Bad")) +
+    theme_minimal(base_family = "sans") +
+    theme(
+      plot.background = element_rect(fill = "#222222", color = "#222222"),
+      panel.background = element_rect(fill = "#222222", color = "#222222"),
+      panel.grid.major = element_line(color = "#444444"),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(color = "white"),
+      axis.text.y = element_text(color = "white"),
+      axis.title.x = element_text(color = "white"),
+      axis.title.y = element_text(color = "white"),
+      plot.title = element_text(color="white", size=14, face="bold"),
+      legend.title = element_text(color = "white"),
+      legend.text = element_text(color = "white"),
+      legend.background = element_rect(fill="#222222")
+    ) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
+  
+  print(p)
+  
+  file_name <- paste0("plots/", var, "_by_CreditRisk.png")
+  ggsave(file_name, plot=p, width=10, height=6, dpi=300)
+}
+
+```
+
+
+```{r}
+# Credit Amount for Good = 0 and Bad = 1 Credit Risk
+data %>%
+  group_by(CreditRisk) %>%
+  summarise(
+    MeanCreditAmount = mean(CreditAmount, na.rm = TRUE),
+    MedianCreditAmount = median(CreditAmount, na.rm = TRUE),
+    MinCreditAmount = min(CreditAmount, na.rm = TRUE),
+    MaxCreditAmount = max(CreditAmount, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+```
+
+
+```{r}
+summary_data <- data %>%
+  group_by(CreditRisk) %>%
+  summarise(
+    MeanCreditAmount = mean(CreditAmount, na.rm = TRUE),
+    MedianCreditAmount = median(CreditAmount, na.rm = TRUE),
+    MinCreditAmount = min(CreditAmount, na.rm = TRUE),
+    MaxCreditAmount = max(CreditAmount, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# Plot with dark theme
+credit_amount_plot <-  ggplot(summary_data, aes(x=CreditRisk)) +
+  geom_point(aes(y=MeanCreditAmount), color="#00C853", size=3, shape=18) + # Use green for mean
+  geom_point(aes(y=MedianCreditAmount), color="#D81B60", size=3, shape=17) + # Use red for median
+  geom_segment(aes(x=CreditRisk, xend=CreditRisk, y=MinCreditAmount, yend=MaxCreditAmount), color="white") +
+  labs(title="Summary of Credit Amount by Credit Risk",
+       x="Credit Risk", y="Credit Amount") +
+  theme_minimal(base_family = "sans") +
+  theme(
+    plot.background = element_rect(fill = "#222222", color = "#222222"), # Dark background
+    panel.background = element_rect(fill = "#222222", color = "#222222"),
+    panel.grid.major = element_line(color = "#444444"), # Lighter lines for grid
+    panel.grid.minor = element_blank(),
+    axis.text = element_text(color = "white"), # White text
+    axis.title = element_text(color = "white"),
+    plot.title = element_text(color="white", size=14, face="bold"),
+    legend.title = element_text(color = "white"),
+    legend.text = element_text(color = "white"),
+    legend.background = element_rect(fill="#222222")
+  ) +
+  scale_y_continuous(name="Credit Amount", labels=dollar_format()) +
+  geom_text(aes(y=MeanCreditAmount, label=paste("Mean:", dollar(round(MeanCreditAmount, 2)))), vjust=-2, color="white") + 
+  geom_text(aes(y=MedianCreditAmount, label=paste("Median:", dollar(round(MedianCreditAmount, 2)))), vjust=2, color="white") 
+
+ggsave("credit_amount_plot.jpg", plot=credit_amount_plot, width=10, height=6, dpi=300)
+print(credit_amount_plot)
+```
+
+
