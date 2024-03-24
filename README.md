@@ -36,6 +36,7 @@ A full logistic regression model was built using all available predictors, follo
 # Model Interpretation
 The logistic regression model provided coefficients for each predictor, quantifying their impact on the probability of being classified as "Bad" credit risk. For example, higher values in CheckingAccountStatus and certain Purpose categories significantly increased the risk, while longer Duration and higher CreditAmount had a minimal negative impact.
 
+![Reduced GLM Formula](Plots/formula.JPG "Reduced GLM Formula")
 
 # Model Evaluation
 The model's performance was evaluated using the Area Under the Curve (AUC) metric from the Receiver Operating Characteristic (ROC) curve, indicating its ability to discriminate between good and bad credit risks effectively. A detailed mathematical equation of the logistic regression model was also derived, illustrating the log odds of the outcome as a function of the predictors.
