@@ -1,6 +1,6 @@
 ---
 title: "German Credit 2"
-author: "Joanna Romano"
+author: "StraszaX"
 date: "2024-03-03"
 output:
   pdf_document: default
